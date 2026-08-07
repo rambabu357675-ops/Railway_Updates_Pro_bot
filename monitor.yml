@@ -1,0 +1,50 @@
+import os
+import requests
+import time
+import hashlib
+
+TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+URL = "https://indianrailways.gov.in"
+
+def send_telegram_message(text):
+    telegram_url = f"https://telegram.org{TOKEN}/sendMessage"
+    payload = {"chat_id": CHAT_ID, "text": text, "parse_mode": "Markdown"}
+    try:
+        requests.post(telegram_url, json=payload, timeout=10)
+    except Exception as e:
+        print(f"Telegram Error: {e}")
+
+def check_website():
+    old_hash = ""
+    print("New RRB Portal Monitor Active... Checking every 12 seconds.")
+    
+    while True:
+        try:
+            # రియల్ బ్రౌజర్ లాగా కనిపించడానికి హెడర్స్
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(URL, headers=headers, timeout=10)
+            
+            # వెబ్‌సైట్ డేటా హాష్ చెక్ చేయడం
+            current_hash = hashlib.sha224(response.content).hexdigest()
+            
+            if old_hash == "":
+                old_hash = current_hash
+                print("Initial state captured. Monitoring started...")
+            
+            elif current_hash != old_hash:
+                old_hash = current_hash
+                msg = f"🚨 *RRB Unified Portal Update!* \n\nకొత్త నోటీస్ వచ్చింది! వెంటనే లింక్ ఓపెన్ చేయండి:\n🔗 {URL}"
+                send_telegram_message(msg)
+                print("🚨 Notification sent to Telegram!")
+                
+        except Exception as e:
+            print(f"Connection Error: {e}")
+        
+        # కరెక్ట్‌గా ప్రతి 12 సెకన్లకు ఒకసారి రన్ అవ్వడానికి
+        time.sleep(12)
+
+if __name__ == "__main__":
+    check_website()
