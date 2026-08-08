@@ -1,1 +1,26 @@
 
+name: RRB Website Monitor
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' # ప్రతి 5 నిమిషాలకు ఒకసారి కోడ్ రన్ అవుతుంది
+  workflow_dispatch: # మీకు కావాలన్నప్పుడు మాన్యువల్‌గా రన్ చేయడానికి
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install requests beautifulsoup4
+
+      - name: Run Script
+        run: python main.py
