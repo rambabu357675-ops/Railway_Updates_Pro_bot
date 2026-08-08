@@ -1,11 +1,13 @@
 import os
 import requests
-import time
 import hashlib
 
-TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-URL = "https://rrb.indianrailways.gov.in"
+# GitHub Secrets నుండి టోకెన్ మరియు చాట్ ఐడి తీసుకుంటుంది
+TOKEN = os.environ.get("TELEGRAM_TOKEN")
+CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
+URL = "https://rrb.indianrailways.gov.in/"
+
+HASH_FILE = "last_hash.txt"
 
 def send_telegram_message(text):
     telegram_url = f"https://telegram.org{TOKEN}/sendMessage"
@@ -16,35 +18,38 @@ def send_telegram_message(text):
         print(f"Telegram Error: {e}")
 
 def check_website():
-    old_hash = ""
-    print("New RRB Portal Monitor Active... Checking every 12 seconds.")
-    
-    while True:
-        try:
-            # రియల్ బ్రౌజర్ లాగా కనిపించడానికి హెడర్స్
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(URL, headers=headers, timeout=10)
-            
-            # వెబ్‌సైట్ డేటా హాష్ చెక్ చేయడం
-            current_hash = hashlib.sha224(response.content).hexdigest()
-            
-            if old_hash == "":
-                old_hash = current_hash
-                print("Initial state captured. Monitoring started...")
-            
-            elif current_hash != old_hash:
-                old_hash = current_hash
-                msg = f"🚨 *RRB Unified Portal Update!* \n\nకొత్త నోటీస్ వచ్చింది! వెంటనే లింక్ ఓపెన్ చేయండి:\n🔗 {URL}"
-                send_telegram_message(msg)
-                print("🚨 Notification sent to Telegram!")
-                
-        except Exception as e:
-            print(f"Connection Error: {e}")
+    if not TOKEN or not CHAT_ID:
+        print("Error: TELEGRAM_TOKEN or TELEGRAM_CHAT_ID is missing in GitHub Secrets!")
+        return
+
+    try:
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+        response = requests.get(URL, headers=headers, timeout=10)
+        current_hash = hashlib.sha224(response.content).hexdigest()
         
-        # కరెక్ట్‌గా ప్రతి 12 సెకన్లకు ఒకసారి రన్ అవ్వడానికి
-        time.sleep(12)
+        old_hash = ""
+        if os.path.exists(HASH_FILE):
+            with open(HASH_FILE, "r") as f:
+                old_hash = f.read().strip()
+        
+        if old_hash == "":
+            with open(HASH_FILE, "w") as f:
+                f.write(current_hash)
+            print("Initial state captured.")
+            
+        elif current_hash != old_hash:
+            with open(HASH_FILE, "w") as f:
+                f.write(current_hash)
+            msg = "🔔 *RRB Unified Portal Update!* \n\nవెబ్‌సైట్‌లో కొత్త నోటీస్ వచ్చింది! వెంటనే చెక్ చేయండి:\nhttps://rrb.indianrailways.gov.in/"
+            send_telegram_message(msg)
+            print("Notification sent to Telegram!")
+        else:
+            print("No changes detected.")
+            
+    except Exception as e:
+        print(f"Connection Error: {e}")
 
 if __name__ == "__main__":
     check_website()
