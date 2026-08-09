@@ -22,5 +22,5 @@ jobs:
         run: |
           pip install requests beautifulsoup4
 
-      - name: - name: Run Script
+      - name: Run Script
   run: python main.py
