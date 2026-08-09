@@ -22,8 +22,5 @@ jobs:
         run: |
           pip install requests beautifulsoup4
 
-      - name: Run Script
-  env:
-    TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-    TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      - name: - name: Run Script
   run: python main.py
